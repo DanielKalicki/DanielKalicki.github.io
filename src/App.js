@@ -1,0 +1,274 @@
+import logo from './logo.svg';
+import './App.css';
+import React, { Component } from "react";
+import * as THREE from "three";
+import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader.js';
+import { sliceGeometry } from "threejs-slice-geometry-typescript";
+
+class App extends Component{
+  componentDidMount() {
+    var scene = new THREE.Scene();
+    var sceneSlice = new THREE.Scene();
+    sceneSlice.background = new THREE.Color( 0xeeeeee );
+
+    // camera
+    var camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 100 );
+    camera.position.set( 0, 0, 0);
+    scene.add(camera);
+    camera.lookAt( scene.position );
+
+    // camera slice
+    var cameraSlice = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 100 );
+    // cameraSlice.position.set( 2, -1.5, 28 );
+    cameraSlice.position.set( 0, 0, 0);
+    sceneSlice.add(cameraSlice);
+
+    cameraSlice.lookAt( sceneSlice.position );
+
+    // lights
+    const light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+    light.position.set( 0, 1, 1 ); //default; light shining from top
+    scene.add( light );
+    
+    const light2 = new THREE.DirectionalLight( 0xffffff, 0.2 );
+    light2.position.set( 1, 0, 1 );
+    scene.add( light2 );
+    
+    const light3 = new THREE.DirectionalLight( 0xffffff, 0.5 );
+    light3.position.set( 0, 0.2, -1 );
+    scene.add( light3 );
+    
+    const ambientLight = new THREE.AmbientLight( 0x333333 );
+    scene.add( ambientLight );
+
+    const lightSlice = new THREE.DirectionalLight( 0x00ff00, 0.5 );
+    lightSlice.position.set( 0, 1, 1 );
+    sceneSlice.add( lightSlice );
+    const lightSlice2 = new THREE.DirectionalLight( 0x00ff00, 0.5 );
+    lightSlice2.position.set( -1, -1, 1 );
+    sceneSlice.add( lightSlice2 );
+    const lightSlice3 = new THREE.DirectionalLight( 0x00ff00, 0.5 );
+    lightSlice3.position.set( 1, 1, 0 );
+    sceneSlice.add( lightSlice3 );
+
+    // load mesh
+    let points;
+    let pointsSlice;
+    let slicePlane;
+    let slicePlane2;
+    let helper;
+    const loader = new PLYLoader()
+    loader.load( '/olsztynska_v2.ply', function ( geometry ) {
+      geometry.center();
+      const material = new THREE.MeshPhongMaterial( { specular: 0x000000,
+        flatShading: true,
+        // shininess: 20,
+        side: THREE.DoubleSide,
+        clipShadows: true
+      } );
+
+      // slicePlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 12.1);
+      slicePlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.1);
+      // slicePlane2 = new THREE.Plane(new THREE.Vector3(0, 0, 1), -12);
+      slicePlane2 = new THREE.Plane(new THREE.Vector3(0, 0, 1), -0);
+      const materialSlice = new THREE.MeshPhongMaterial( { specular: 0x000000,
+        flatShading: true,
+        side: THREE.DoubleSide,
+        clippingPlanes: [slicePlane2, slicePlane],
+        clipShadows: true
+      } );
+    
+      points = new THREE.Mesh( geometry, material );
+      scene.add( points );
+
+      helper = new THREE.PlaneHelper( slicePlane2, 1, 0xffff00 );
+      // helper = new THREE.Mesh( helper, materialSlice );
+      scene.add(helper)
+
+      pointsSlice = new THREE.Mesh( geometry, materialSlice );
+      sceneSlice.add( pointsSlice );
+      
+      points.rotation.x = -4.55
+      points.rotation.y = 3.19
+      points.rotation.z = 0.15;
+
+      points.position.x = -9.3;
+      points.position.y = 0.3;
+      points.position.z = -18.2;
+
+      // pointsSlice.rotation.x = -4.55
+      // pointsSlice.rotation.y = 3.19
+      // pointsSlice.rotation.z = -0.5
+      // cameraSlice.position.z = 0;
+
+      pointsSlice.position.z = -camera.position.z
+      helper.position.z = camera.position.z-1
+      helper.position.x = camera.position.x
+      helper.position.y = camera.position.y
+    } );
+
+    const canvas = document.getElementById("cave_mesh_id");
+    var renderer = new THREE.WebGLRenderer({canvas: canvas});
+    var width = 1200;
+    var height = 800;
+    renderer.setSize(width, height, false);
+    renderer.localClippingEnabled = true;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    document.body.appendChild( renderer.domElement );
+
+    const canvasSlice = document.getElementById("cave_slice_id");
+    var rendererSlice = new THREE.WebGLRenderer({canvas: canvasSlice});
+    var widthSlice = 1200;
+    var heightSlice = 200;
+    rendererSlice.setSize(widthSlice, heightSlice, false);
+    rendererSlice.localClippingEnabled = true;
+    cameraSlice.aspect = widthSlice / heightSlice;
+    cameraSlice.updateProjectionMatrix();
+    document.body.appendChild( rendererSlice.domElement );
+
+
+    var animate = function () {
+      requestAnimationFrame( animate );
+      // ... 
+      renderer.render( scene, camera );
+
+      // cameraSlice.position.x = camera.position.x;
+      // cameraSlice.position.y = camera.position.y;
+      cameraSlice.position.z = camera.position.z-5;
+      // cameraSlice.rotation.x = camera.rotation.x;
+      // cameraSlice.rotation.y = camera.rotation.y;
+      // cameraSlice.rotation.z = camera.rotation.z;
+      // if (slicePlane){
+      //   slicePlane.setComponents(slicePlane.normal.x, slicePlane.normal.y, slicePlane.normal.z, slicePlane.constant);
+      //   slicePlane2.setComponents(slicePlane2.normal.x, slicePlane2.normal.y, slicePlane2.normal.z, slicePlane2.constant);
+      // }
+      // slicePlane.normal.x += 0.01
+      // slicePlane2.normal.x += 0.01
+      rendererSlice.render( sceneSlice, cameraSlice );
+    };
+
+    animate();
+
+    var caveMesh = document.getElementById("cave_mesh_id");
+
+    let rotateStart_ = false;
+    let x_ = 0;
+    let y_ = 0;
+    let camera_x_ = 0;
+    let camera_y_ = 0;
+    let pointsSlice_z_ = 0;
+    caveMesh.addEventListener("mousedown", function(e){
+      rotateStart_ = true;
+      x_ = e.clientX;
+      y_ = e.clientY;
+      camera_x_ = camera.rotation.x;
+      camera_y_ = camera.rotation.y;
+      pointsSlice_z_ = pointsSlice.rotation.z;
+    }, true);
+    caveMesh.addEventListener("mouseup", function(e){
+      rotateStart_ = false;
+    }, true);
+    caveMesh.addEventListener("mousemove", function(e){
+      if (rotateStart_){
+        camera.rotation.y = camera_y_ - (x_ - e.clientX)/300;
+        camera.rotation.x = camera_x_ - (y_ - e.clientY)/300;
+
+        pointsSlice.rotation.z = pointsSlice_z_ - (x_ - e.clientX)/300
+        helper.rotation.z = pointsSlice_z_ - (x_ - e.clientX)/300
+      }
+    }, true);
+
+    window.addEventListener("keydown", function (event) {
+      if (event.defaultPrevented) {
+        return; // Do nothing if the event was already processed
+      }
+
+      switch (event.key) {
+        case "w":
+          camera.position.z -= 0.2*Math.cos(camera.rotation.y);
+          camera.position.x -= 0.2*Math.sin(camera.rotation.y);
+          slicePlane.constant -= 0.2*Math.cos(camera.rotation.y);
+          slicePlane2.constant += 0.2*Math.cos(camera.rotation.y);
+
+          // camera.position.y -= 0.2*Math.sin(camera.rotation.x);
+          // camera.position.z -= 0.2*Math.cos(camera.rotation.x);
+          break;
+        case "s":
+          camera.position.z += 0.2*Math.cos(camera.rotation.y);
+          camera.position.x += 0.2*Math.sin(camera.rotation.y);
+          slicePlane.constant += 0.2*Math.cos(camera.rotation.y);
+          slicePlane2.constant -= 0.2*Math.cos(camera.rotation.y);
+
+          // camera.position.y += 0.2*Math.sin(camera.rotation.x);
+          // camera.position.z += 0.2*Math.cos(camera.rotation.x);
+          break;
+        case "a":
+          camera.position.x -= 0.2*Math.sin(camera.rotation.y+1.5708);
+          camera.position.z -= 0.2*Math.cos(camera.rotation.y+1.5708);
+          break;
+        case "d":
+          camera.position.x += 0.2*Math.sin(camera.rotation.y+1.5708);
+          camera.position.z += 0.2*Math.cos(camera.rotation.y+1.5708);
+          break;
+
+        case "r":
+          camera.position.y += 0.01
+          if (slicePlane){
+            // slicePlane.setComponents(slicePlane.normal.x+0.1, slicePlane.normal.y, slicePlane.normal.z, slicePlane.constant);
+            // slicePlane2.setComponents(slicePlane2.normal.x+0.1, slicePlane2.normal.y, slicePlane2.normal.z, slicePlane2.constant);
+            // pointsSlice.rotation.z += 0.01
+          }
+          break;
+        case "f":
+          camera.position.y -= 0.01
+          if (slicePlane){
+            // slicePlane.setComponents(slicePlane.normal.x-0.1, slicePlane.normal.y, slicePlane.normal.z, slicePlane.constant);
+            // slicePlane2.setComponents(slicePlane2.normal.x-0.1, slicePlane2.normal.y, slicePlane2.normal.z, slicePlane2.constant);
+            // pointsSlice.rotation.z -= 0.01
+          }
+          break;
+
+        case "t":
+          points.position.z -= 0.1
+          console.log('z' + points.position.z.toString())
+          break;
+        case "g":
+          points.position.z += 0.1
+          break;
+        case "y":
+          points.position.y -= 0.1
+          console.log('y' + points.position.y.toString())
+          break;
+        case "h":
+          points.position.y += 0.1
+          break;
+        case "u":
+          points.position.x -= 0.1
+          console.log('x' + points.position.x.toString())
+          break;
+        case "j":
+          points.position.x += 0.1
+          break;
+          
+        default:
+          return; // Quit when this doesn't handle the key event.
+      }
+      // slicePlain.position.z = camera.position.z-10;
+
+
+      // Cancel the default action to avoid it being handled twice
+      event.preventDefault();
+    }, true); 
+  }
+  render() {
+    return (
+      <div>
+        <canvas id="cave_mesh_id" data-engine="three.js r140" ></canvas>
+        <canvas id="cave_slice_id" data-engine="three.js r140" ></canvas>
+      </div>
+    )
+  }
+}
+
+export default App;
