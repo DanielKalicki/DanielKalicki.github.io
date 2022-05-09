@@ -57,9 +57,11 @@ class App extends Component{
     let slicePlane;
     let slicePlane2;
     let helper;
+    let mesh2;
     const loader = new PLYLoader()
     loader.load( '/olsztynska_v2.ply', function ( geometry ) {
       geometry.center();
+      console.log(geometry)
       const material = new THREE.MeshPhongMaterial( { specular: 0x000000,
         flatShading: true,
         // shininess: 20,
@@ -71,22 +73,13 @@ class App extends Component{
       slicePlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.1);
       // slicePlane2 = new THREE.Plane(new THREE.Vector3(0, 0, 1), -12);
       slicePlane2 = new THREE.Plane(new THREE.Vector3(0, 0, 1), -0);
-      const materialSlice = new THREE.MeshPhongMaterial( { specular: 0x000000,
-        flatShading: true,
-        side: THREE.DoubleSide,
-        clippingPlanes: [slicePlane2, slicePlane],
-        clipShadows: true
-      } );
     
       points = new THREE.Mesh( geometry, material );
       scene.add( points );
 
-      helper = new THREE.PlaneHelper( slicePlane2, 1, 0xffff00 );
+      helper = new THREE.PlaneHelper( slicePlane2, 10, 0xffff00 );
       // helper = new THREE.Mesh( helper, materialSlice );
       scene.add(helper)
-
-      pointsSlice = new THREE.Mesh( geometry, materialSlice );
-      sceneSlice.add( pointsSlice );
       
       points.rotation.x = -4.55
       points.rotation.y = 3.19
@@ -96,16 +89,62 @@ class App extends Component{
       points.position.y = 0.3;
       points.position.z = -18.2;
 
-      // pointsSlice.rotation.x = -4.55
-      // pointsSlice.rotation.y = 3.19
-      // pointsSlice.rotation.z = -0.5
-      // cameraSlice.position.z = 0;
-
-      pointsSlice.position.z = -camera.position.z
       helper.position.z = camera.position.z-1
       helper.position.x = camera.position.x
       helper.position.y = camera.position.y
-    } );
+    })
+
+    let caveGeometry = new THREE.BufferGeometry();
+
+    var updateGeometry = function(pos){
+      sceneSlice.remove(mesh2);
+      const geometry2 = new THREE.BufferGeometry();
+      let vertices = new Float32Array(caveGeometry.attributes.position.array.length);
+      let v_idx = 0;
+      for (let i = 0; i<caveGeometry.attributes.position.array.length; i+=3){
+        var val = caveGeometry.attributes.position.array[i+2]
+        if (val < pos && val > (pos-0.25)) {
+          vertices[v_idx++] = caveGeometry.attributes.position.array[i];
+          vertices[v_idx++] = caveGeometry.attributes.position.array[i+1];
+          vertices[v_idx++] = caveGeometry.attributes.position.array[i+2];
+        }
+      }
+      geometry2.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+      const material2 = new THREE.PointsMaterial( { color: 0x888888, size: 0.1 } );
+      mesh2 = new THREE.Points( geometry2, material2 );
+      sceneSlice.add(mesh2);
+    }
+
+    loader.load( '/olsztynska_v2.ply', function ( geometry_ ) {
+      geometry_.center();
+      geometry_.rotateX(4.55)
+      geometry_.rotateY(-3.0)
+      geometry_.rotateZ(0.07)
+      geometry_.translate(-9.3, 0.3, -18.2)
+      console.log(geometry_)
+      caveGeometry.copy(geometry_)
+    })
+
+    //   const geometry2 = new THREE.BufferGeometry();
+    //   let vertices = new Float32Array(geometry_.attributes.position.array.length);
+    //   let v_idx = 0;
+    //   for (let i = 0; i<geometry_.attributes.position.array.length; i+=3){
+    //     var val = geometry_.attributes.position.array[i+2]
+    //     if (val < -3.0 && val > -5) {
+    //       vertices[v_idx++] = geometry_.attributes.position.array[i];
+    //       vertices[v_idx++] = geometry_.attributes.position.array[i+1];
+    //       vertices[v_idx++] = geometry_.attributes.position.array[i+2];
+    //     }
+    //   }
+    //   geometry2.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+    //   // console.log(geometry2)
+    //   // const material2 = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
+    //   const material2 = new THREE.PointsMaterial( { color: 0x888888, size: 0.1 } );
+    //   mesh2 = new THREE.Points( geometry2, material2 );
+    //   sceneSlice.add(mesh2);
+
+    // // } );
+
 
     const canvas = document.getElementById("cave_mesh_id");
     var renderer = new THREE.WebGLRenderer({canvas: canvas});
@@ -135,7 +174,7 @@ class App extends Component{
 
       // cameraSlice.position.x = camera.position.x;
       // cameraSlice.position.y = camera.position.y;
-      cameraSlice.position.z = camera.position.z-5;
+      cameraSlice.position.z = camera.position.z+5;
       // cameraSlice.rotation.x = camera.rotation.x;
       // cameraSlice.rotation.y = camera.rotation.y;
       // cameraSlice.rotation.z = camera.rotation.z;
@@ -172,7 +211,7 @@ class App extends Component{
     caveMesh.addEventListener("mousemove", function(e){
       if (rotateStart_){
         camera.rotation.y = camera_y_ - (x_ - e.clientX)/300;
-        camera.rotation.x = camera_x_ - (y_ - e.clientY)/300;
+        // camera.rotation.x = camera_x_ - (y_ - e.clientY)/300;
 
         pointsSlice.rotation.z = pointsSlice_z_ - (x_ - e.clientX)/300
         helper.rotation.z = pointsSlice_z_ - (x_ - e.clientX)/300
@@ -190,6 +229,9 @@ class App extends Component{
           camera.position.x -= 0.2*Math.sin(camera.rotation.y);
           slicePlane.constant -= 0.2*Math.cos(camera.rotation.y);
           slicePlane2.constant += 0.2*Math.cos(camera.rotation.y);
+
+          // console.log(caveGeometry)
+          updateGeometry(camera.position.z)
 
           // camera.position.y -= 0.2*Math.sin(camera.rotation.x);
           // camera.position.z -= 0.2*Math.cos(camera.rotation.x);
@@ -213,7 +255,7 @@ class App extends Component{
           break;
 
         case "r":
-          camera.position.y += 0.01
+          camera.position.y += 0.5
           if (slicePlane){
             // slicePlane.setComponents(slicePlane.normal.x+0.1, slicePlane.normal.y, slicePlane.normal.z, slicePlane.constant);
             // slicePlane2.setComponents(slicePlane2.normal.x+0.1, slicePlane2.normal.y, slicePlane2.normal.z, slicePlane2.constant);
@@ -221,7 +263,7 @@ class App extends Component{
           }
           break;
         case "f":
-          camera.position.y -= 0.01
+          camera.position.y -= 0.5
           if (slicePlane){
             // slicePlane.setComponents(slicePlane.normal.x-0.1, slicePlane.normal.y, slicePlane.normal.z, slicePlane.constant);
             // slicePlane2.setComponents(slicePlane2.normal.x-0.1, slicePlane2.normal.y, slicePlane2.normal.z, slicePlane2.constant);
@@ -230,25 +272,29 @@ class App extends Component{
           break;
 
         case "t":
-          points.position.z -= 0.1
-          console.log('z' + points.position.z.toString())
+          mesh2.rotation.z -= 0.01
+          console.log('z' + mesh2.rotation.z.toString())
           break;
         case "g":
-          points.position.z += 0.1
+          mesh2.rotation.z += 0.01
+          console.log('z' + mesh2.rotation.z.toString())
           break;
+
         case "y":
-          points.position.y -= 0.1
-          console.log('y' + points.position.y.toString())
+          mesh2.rotation.y -= 0.01
+          console.log('y' + mesh2.rotation.y.toString())
           break;
         case "h":
-          points.position.y += 0.1
+          mesh2.rotation.y += 0.01
+          console.log('y' + mesh2.rotation.y.toString())
           break;
         case "u":
-          points.position.x -= 0.1
-          console.log('x' + points.position.x.toString())
+          mesh2.rotation.x -= 0.01
+          console.log('x' + mesh2.rotation.x.toString())
           break;
         case "j":
-          points.position.x += 0.1
+          mesh2.rotation.x += 0.01
+          console.log('x' + mesh2.rotation.x.toString())
           break;
           
         default:
