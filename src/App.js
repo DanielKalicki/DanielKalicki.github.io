@@ -51,6 +51,14 @@ class App extends Component{
     lightSlice3.position.set( 1, 1, 0 );
     sceneSlice.add( lightSlice3 );
 
+    var plane = new THREE.GridHelper(100, 100);
+    plane.geometry.rotateX( Math.PI / 2 );
+    sceneSlice.add(plane);
+
+    var plane2 = new THREE.GridHelper(100, 100);
+    plane2.geometry.rotateX( Math.PI / 2 );
+    scene.add(plane2);
+
     // load mesh
     let points;
     let pointsSlice;
@@ -77,9 +85,9 @@ class App extends Component{
       points = new THREE.Mesh( geometry, material );
       scene.add( points );
 
-      helper = new THREE.PlaneHelper( slicePlane2, 10, 0xffff00 );
+      // helper = new THREE.PlaneHelper( slicePlane2, 10, 0xffff00 );
       // helper = new THREE.Mesh( helper, materialSlice );
-      scene.add(helper)
+      // scene.add(helper)
       
       points.rotation.x = -4.55
       points.rotation.y = 3.19
@@ -101,16 +109,21 @@ class App extends Component{
       const geometry2 = new THREE.BufferGeometry();
       let vertices = new Float32Array(caveGeometry.attributes.position.array.length);
       let v_idx = 0;
+      console.log(camera.rotation.y)
       for (let i = 0; i<caveGeometry.attributes.position.array.length; i+=3){
-        var val = caveGeometry.attributes.position.array[i+2]
-        if (val < pos && val > (pos-0.25)) {
+        var val_z = caveGeometry.attributes.position.array[i+2]
+        var val_y = caveGeometry.attributes.position.array[i+1]
+        // if (val_z < (Math.sin(-camera.rotation.y)*val_y + pos) && val_z > (Math.sin(-camera.rotation.y)*val_y + pos-0.25)) {
+        if (val_z < (Math.sin(-plane2.rotation.y)*val_y + pos) && val_z > (Math.sin(-plane2.rotation.y)*val_y + pos-0.25)) {
+        // if (val_z < pos && val_z > (pos-0.25)) {
           vertices[v_idx++] = caveGeometry.attributes.position.array[i];
           vertices[v_idx++] = caveGeometry.attributes.position.array[i+1];
           vertices[v_idx++] = caveGeometry.attributes.position.array[i+2];
         }
       }
       geometry2.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
-      const material2 = new THREE.PointsMaterial( { color: 0x888888, size: 0.1 } );
+      // const material2 = new THREE.PointsMaterial( { color: 0x888888, size: 0.1 } );
+      const material2 = new THREE.PointsMaterial( { color: 0x000000, size: 0.3 } );
       mesh2 = new THREE.Points( geometry2, material2 );
       sceneSlice.add(mesh2);
     }
@@ -125,31 +138,10 @@ class App extends Component{
       caveGeometry.copy(geometry_)
     })
 
-    //   const geometry2 = new THREE.BufferGeometry();
-    //   let vertices = new Float32Array(geometry_.attributes.position.array.length);
-    //   let v_idx = 0;
-    //   for (let i = 0; i<geometry_.attributes.position.array.length; i+=3){
-    //     var val = geometry_.attributes.position.array[i+2]
-    //     if (val < -3.0 && val > -5) {
-    //       vertices[v_idx++] = geometry_.attributes.position.array[i];
-    //       vertices[v_idx++] = geometry_.attributes.position.array[i+1];
-    //       vertices[v_idx++] = geometry_.attributes.position.array[i+2];
-    //     }
-    //   }
-    //   geometry2.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
-    //   // console.log(geometry2)
-    //   // const material2 = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
-    //   const material2 = new THREE.PointsMaterial( { color: 0x888888, size: 0.1 } );
-    //   mesh2 = new THREE.Points( geometry2, material2 );
-    //   sceneSlice.add(mesh2);
-
-    // // } );
-
-
     const canvas = document.getElementById("cave_mesh_id");
     var renderer = new THREE.WebGLRenderer({canvas: canvas});
     var width = 1200;
-    var height = 800;
+    var height = 400;
     renderer.setSize(width, height, false);
     renderer.localClippingEnabled = true;
     camera.aspect = width / height;
@@ -159,13 +151,12 @@ class App extends Component{
     const canvasSlice = document.getElementById("cave_slice_id");
     var rendererSlice = new THREE.WebGLRenderer({canvas: canvasSlice});
     var widthSlice = 1200;
-    var heightSlice = 200;
+    var heightSlice = 400;
     rendererSlice.setSize(widthSlice, heightSlice, false);
     rendererSlice.localClippingEnabled = true;
     cameraSlice.aspect = widthSlice / heightSlice;
     cameraSlice.updateProjectionMatrix();
     document.body.appendChild( rendererSlice.domElement );
-
 
     var animate = function () {
       requestAnimationFrame( animate );
@@ -174,7 +165,14 @@ class App extends Component{
 
       // cameraSlice.position.x = camera.position.x;
       // cameraSlice.position.y = camera.position.y;
-      cameraSlice.position.z = camera.position.z+5;
+      cameraSlice.position.z = camera.position.z+20;
+
+      plane.position.z = camera.position.z;
+
+      // plane2.rotation.x = camera.rotation.x;
+      // plane2.rotation.y = camera.rotation.y;
+      plane2.position.z = camera.position.z;
+
       // cameraSlice.rotation.x = camera.rotation.x;
       // cameraSlice.rotation.y = camera.rotation.y;
       // cameraSlice.rotation.z = camera.rotation.z;
@@ -203,7 +201,7 @@ class App extends Component{
       y_ = e.clientY;
       camera_x_ = camera.rotation.x;
       camera_y_ = camera.rotation.y;
-      pointsSlice_z_ = pointsSlice.rotation.z;
+      // pointsSlice_z_ = pointsSlice.rotation.z;
     }, true);
     caveMesh.addEventListener("mouseup", function(e){
       rotateStart_ = false;
@@ -211,10 +209,12 @@ class App extends Component{
     caveMesh.addEventListener("mousemove", function(e){
       if (rotateStart_){
         camera.rotation.y = camera_y_ - (x_ - e.clientX)/300;
-        // camera.rotation.x = camera_x_ - (y_ - e.clientY)/300;
+        camera.rotation.x = camera_x_ - (y_ - e.clientY)/300;
 
-        pointsSlice.rotation.z = pointsSlice_z_ - (x_ - e.clientX)/300
-        helper.rotation.z = pointsSlice_z_ - (x_ - e.clientX)/300
+        // pointsSlice.rotation.z = pointsSlice_z_ - (x_ - e.clientX)/300
+        // helper.rotation.z = pointsSlice_z_ - (x_ - e.clientX)/300
+
+        updateGeometry(camera.position.z)
       }
     }, true);
 
@@ -227,10 +227,10 @@ class App extends Component{
         case "w":
           camera.position.z -= 0.2*Math.cos(camera.rotation.y);
           camera.position.x -= 0.2*Math.sin(camera.rotation.y);
-          slicePlane.constant -= 0.2*Math.cos(camera.rotation.y);
-          slicePlane2.constant += 0.2*Math.cos(camera.rotation.y);
+          // slicePlane.constant -= 0.2*Math.cos(camera.rotation.y);
+          // slicePlane2.constant += 0.2*Math.cos(camera.rotation.y);
 
-          // console.log(caveGeometry)
+          console.log(camera.position)
           updateGeometry(camera.position.z)
 
           // camera.position.y -= 0.2*Math.sin(camera.rotation.x);
@@ -239,8 +239,10 @@ class App extends Component{
         case "s":
           camera.position.z += 0.2*Math.cos(camera.rotation.y);
           camera.position.x += 0.2*Math.sin(camera.rotation.y);
-          slicePlane.constant += 0.2*Math.cos(camera.rotation.y);
-          slicePlane2.constant -= 0.2*Math.cos(camera.rotation.y);
+          // slicePlane.constant += 0.2*Math.cos(camera.rotation.y);
+          // slicePlane2.constant -= 0.2*Math.cos(camera.rotation.y);
+
+          updateGeometry(camera.position.z)
 
           // camera.position.y += 0.2*Math.sin(camera.rotation.x);
           // camera.position.z += 0.2*Math.cos(camera.rotation.x);
@@ -289,12 +291,16 @@ class App extends Component{
           console.log('y' + mesh2.rotation.y.toString())
           break;
         case "u":
-          mesh2.rotation.x -= 0.01
-          console.log('x' + mesh2.rotation.x.toString())
+          // mesh2.rotation.x -= 0.01
+          // console.log('x' + mesh2.rotation.x.toString())
+          plane2.rotation.y -= 0.01
+          updateGeometry(camera.position.z)
           break;
         case "j":
-          mesh2.rotation.x += 0.01
-          console.log('x' + mesh2.rotation.x.toString())
+          // mesh2.rotation.x += 0.01
+          // console.log('x' + mesh2.rotation.x.toString())
+          plane2.rotation.y += 0.01
+          updateGeometry(camera.position.z)
           break;
           
         default:
